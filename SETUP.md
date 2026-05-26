@@ -41,14 +41,20 @@ Verify: sign up → verify email (if enabled) → onboarding → home feed → a
 ## 3. GitHub
 
 1. Create a new repo on GitHub (private recommended). Do not add README/gitignore from GitHub.
-2. Push from this folder:
+2. Push from this folder (Git must be on PATH, or use full path to `git.exe`):
+
+```powershell
+.\scripts\push-github.ps1 -RepoUrl "https://github.com/YOUR_USERNAME/YOUR_REPO.git"
+```
+
+Or manually:
 
 ```powershell
 git remote add origin https://github.com/YOUR_USERNAME/YOUR_REPO.git
 git push -u origin main
 ```
 
-If the repo was initialized here without a remote, run `git init` only if `.git` does not exist.
+The repo is already initialized locally with an initial commit; you only need to add the remote and push.
 
 ## 4. Vercel (live app — not GitHub Pages)
 
