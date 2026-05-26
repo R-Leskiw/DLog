@@ -1,0 +1,41 @@
+import { redirect } from "next/navigation";
+
+import { Feed } from "@/components/feed/feed";
+import { AppShell } from "@/components/layout/app-shell";
+import { LandingPage } from "@/components/marketing/landing-page";
+import {
+  getSessionUser,
+  isEmailVerified,
+  isProfileComplete,
+} from "@/lib/auth/profile";
+
+export default async function HomePage() {
+  if (
+    !process.env.NEXT_PUBLIC_SUPABASE_URL ||
+    !process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY
+  ) {
+    return <LandingPage />;
+  }
+
+  const { user, profile } = await getSessionUser();
+
+  if (!user) {
+    return <LandingPage />;
+  }
+
+  if (!isEmailVerified(user)) {
+    redirect("/verify-email");
+  }
+
+  if (!isProfileComplete(profile)) {
+    redirect("/onboarding");
+  }
+
+  const role = profile!.role ?? "client";
+
+  return (
+    <AppShell role={role}>
+      <Feed />
+    </AppShell>
+  );
+}

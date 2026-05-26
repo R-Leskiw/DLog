@@ -1,0 +1,21 @@
+You are an expert Full-stack Developer and UX Designer.
+
+Context:
+- Always refer to @PROJECT_SPEC.md for project goals.
+- Use Next.js 15 (App Router), Tailwind CSS, and Shadcn UI.
+- Use Supabase for Auth, Database, and Storage.
+
+Coding Standards:
+- Use TypeScript for all files; prefer functional components.
+- Styling: Use Tailwind. For the primary brand color, use 'yellow-400'.
+- Typography: Import 'Young Serif' from Google Fonts for h1, h2, h3.
+- Mobile First: Ensure all UI is usable on a smartphone (for construction workers).
+
+Project Rules:
+- Never hardcode client secrets. Use .env.local.
+- When creating logs, ensure the "Client" role is restricted from seeing the "Chat" route.
+
+UX & Responsiveness Rules:
+- Mobile (Field): Prioritize "Fat Finger" touch targets (minimum 44x44px). Use bottom-tab navigation for the Employee view.
+- Desktop (Office): Use a persistent sidebar for navigation. Use data tables with sorting/filtering for Logs.
+- Performance: Optimize image uploads. Construction sites often have poor LTE/5G; use compression before uploading to Supabase.
