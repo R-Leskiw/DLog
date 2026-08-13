@@ -6,14 +6,16 @@ import {
   ClipboardPlus,
   Home,
   MessageCircle,
+  Settings,
   User,
 } from "lucide-react";
 
 import { siteConfig } from "@/config/site";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/roles";
+import { isStaffRole } from "@/types/roles";
 
-const employeeNav = [
+const staffNav = [
   { href: "/", label: "Feed", icon: Home },
   { href: "/logs/new", label: "Add log", icon: ClipboardPlus },
   { href: "/chat", label: "Chat", icon: MessageCircle },
@@ -23,6 +25,12 @@ const clientNav = [
   { href: "/", label: "Feed", icon: Home },
   { href: "/profile", label: "Profile", icon: User },
 ] as const;
+
+const adminNavItem = {
+  href: "/admin",
+  label: "Admin",
+  icon: Settings,
+} as const;
 
 function NavLink({
   href,
@@ -62,7 +70,11 @@ function NavLink({
 }
 
 export function AppNavigation({ role }: { role: UserRole }) {
-  const navItems = role === "employee" ? employeeNav : clientNav;
+  const navItems = isStaffRole(role)
+    ? role === "admin"
+      ? [...staffNav, adminNavItem]
+      : [...staffNav]
+    : [...clientNav];
 
   return (
     <>

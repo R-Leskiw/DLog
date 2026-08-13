@@ -192,7 +192,7 @@ export function DailyLogForm() {
       if (insErr) {
         const msg =
           insErr.code === "42501" || /row-level security/i.test(insErr.message)
-            ? `${insErr.message} (Employees need a profile with role "employee".)`
+            ? `${insErr.message} (Approved employees/admins need a matching profile role.)`
             : insErr.message;
         setSubmitError(msg);
         return;

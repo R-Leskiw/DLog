@@ -2,11 +2,13 @@ import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
 
 import {
+  isAdminOnlyRoute,
   isAuthRoute,
   isEmployeeOnlyRoute,
   isProtectedAppRoute,
 } from "@/lib/auth/routes";
-import type { UserRole } from "@/types/roles";
+import type { ApprovalStatus, UserRole } from "@/types/roles";
+import { isStaffRole } from "@/types/roles";
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -45,16 +47,24 @@ export async function updateSession(request: NextRequest) {
 
   let role: UserRole | null = null;
   let profileComplete = false;
+  let approvalStatus: ApprovalStatus = "approved";
 
   if (user) {
     const { data: profile } = await supabase
       .from("profiles")
-      .select("full_name, role")
+      .select("full_name, role, approval_status")
       .eq("id", user.id)
       .maybeSingle();
     role = (profile?.role as UserRole) ?? null;
     profileComplete = Boolean(profile?.full_name?.trim() && profile?.role);
+    approvalStatus =
+      (profile?.approval_status as ApprovalStatus | null) ?? "approved";
   }
+
+  const approved = approvalStatus === "approved";
+  const awaitingApproval =
+    profileComplete &&
+    (approvalStatus === "pending" || approvalStatus === "rejected");
 
   const redirect = (path: string) => {
     const next = NextResponse.redirect(new URL(path, request.url));
@@ -74,6 +84,10 @@ export async function updateSession(request: NextRequest) {
     if (!profileComplete) {
       if (pathname === "/onboarding") return supabaseResponse;
       return redirect("/onboarding");
+    }
+    if (awaitingApproval) {
+      if (pathname === "/pending-approval") return supabaseResponse;
+      return redirect("/pending-approval");
     }
     // Allow password reset while signed in; otherwise leave auth chrome for the app.
     if (pathname === "/reset-password") return supabaseResponse;
@@ -101,14 +115,24 @@ export async function updateSession(request: NextRequest) {
     }
   }
 
-  if (isLoggedIn && isVerified && profileComplete) {
-    if (role === "client" && isEmployeeOnlyRoute(pathname)) {
-      return redirect("/");
+  if (
+    isLoggedIn &&
+    isVerified &&
+    awaitingApproval &&
+    pathname !== "/pending-approval"
+  ) {
+    if (isProtectedAppRoute(pathname) || pathname === "/") {
+      return redirect("/pending-approval");
     }
   }
 
-  if (isLoggedIn && isVerified && profileComplete && pathname === "/") {
-    return supabaseResponse;
+  if (isLoggedIn && isVerified && profileComplete && approved) {
+    if (!isStaffRole(role) && isEmployeeOnlyRoute(pathname)) {
+      return redirect("/");
+    }
+    if (role !== "admin" && isAdminOnlyRoute(pathname)) {
+      return redirect("/");
+    }
   }
 
   return supabaseResponse;

@@ -5,6 +5,7 @@ import { AppShell } from "@/components/layout/app-shell";
 import { LandingPage } from "@/components/marketing/landing-page";
 import {
   getSessionUser,
+  isApproved,
   isEmailVerified,
   isProfileComplete,
 } from "@/lib/auth/profile";
@@ -29,6 +30,10 @@ export default async function HomePage() {
 
   if (!isProfileComplete(profile)) {
     redirect("/onboarding");
+  }
+
+  if (!isApproved(profile)) {
+    redirect("/pending-approval");
   }
 
   const role = profile!.role ?? "client";

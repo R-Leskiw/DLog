@@ -10,14 +10,14 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { setPendingRole } from "@/lib/auth/pending-role";
 import { createClient } from "@/lib/supabase/client";
-import type { UserRole } from "@/types/roles";
+import type { RequestableRole } from "@/types/roles";
 import { cn } from "@/lib/utils";
 
 export function SignupForm() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
-  const [role, setRole] = useState<UserRole>("employee");
+  const [role, setRole] = useState<RequestableRole>("employee");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -51,7 +51,7 @@ export function SignupForm() {
   return (
     <AuthCard
       title="Create account"
-      description="Choose your role, then verify your email to continue."
+      description="Request Employee or Client access, then verify your email. A company admin must approve new accounts."
       footer={
         <>
           Already have an account?{" "}

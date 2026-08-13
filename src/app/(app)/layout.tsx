@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { AppShell } from "@/components/layout/app-shell";
 import {
   getSessionUser,
+  isApproved,
   isEmailVerified,
   isProfileComplete,
 } from "@/lib/auth/profile";
@@ -30,6 +31,7 @@ export default async function AppGroupLayout({
   if (!user) redirect("/login");
   if (!isEmailVerified(user)) redirect("/verify-email");
   if (!isProfileComplete(profile)) redirect("/onboarding");
+  if (!isApproved(profile)) redirect("/pending-approval");
 
   const role = (profile?.role ?? "client") as UserRole;
 

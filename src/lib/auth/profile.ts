@@ -1,12 +1,13 @@
 import type { User } from "@supabase/supabase-js";
 
 import { createClient } from "@/lib/supabase/server";
-import type { UserRole } from "@/types/roles";
+import type { ApprovalStatus, UserRole } from "@/types/roles";
 
 export type Profile = {
   id: string;
   full_name: string | null;
   role: UserRole | null;
+  approval_status?: ApprovalStatus | null;
   updated_at?: string;
 };
 
@@ -18,6 +19,17 @@ export function isEmailVerified(user: User | null): boolean {
 export function isProfileComplete(profile: Profile | null): boolean {
   if (!profile) return false;
   return Boolean(profile.full_name?.trim() && profile.role);
+}
+
+export function getApprovalStatus(
+  profile: Profile | null
+): ApprovalStatus | null {
+  if (!profile) return null;
+  return profile.approval_status ?? "approved";
+}
+
+export function isApproved(profile: Profile | null): boolean {
+  return getApprovalStatus(profile) === "approved";
 }
 
 export async function getSessionUser() {
@@ -37,7 +49,7 @@ export async function getProfileForUser(
 ): Promise<Profile | null> {
   const { data, error } = await supabase
     .from("profiles")
-    .select("id, full_name, role, updated_at")
+    .select("id, full_name, role, approval_status, updated_at")
     .eq("id", userId)
     .maybeSingle();
   if (error || !data) return null;

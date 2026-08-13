@@ -8,7 +8,11 @@
 CREATE TABLE IF NOT EXISTS public.profiles (
   id UUID REFERENCES auth.users ON DELETE CASCADE PRIMARY KEY,
   full_name TEXT,
-  role TEXT CHECK (role IN ('employee', 'client')),
+  role TEXT CHECK (role IS NULL OR role IN ('employee', 'client', 'admin')),
+  approval_status TEXT NOT NULL DEFAULT 'pending'
+    CHECK (approval_status IN ('pending', 'approved', 'rejected')),
+  reviewed_at TIMESTAMPTZ,
+  reviewed_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
@@ -72,7 +76,9 @@ CREATE POLICY "daily_logs_insert_employee" ON public.daily_logs
   WITH CHECK (
     EXISTS (
       SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'employee'
+      WHERE p.id = auth.uid()
+        AND p.role IN ('employee', 'admin')
+        AND p.approval_status = 'approved'
     )
   );
 
@@ -83,16 +89,73 @@ CREATE POLICY "daily_logs_update_own_employee" ON public.daily_logs
     created_by = auth.uid()
     AND EXISTS (
       SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'employee'
+      WHERE p.id = auth.uid()
+        AND p.role IN ('employee', 'admin')
+        AND p.approval_status = 'approved'
     )
   )
   WITH CHECK (
     created_by = auth.uid()
     AND EXISTS (
       SELECT 1 FROM public.profiles p
-      WHERE p.id = auth.uid() AND p.role = 'employee'
+      WHERE p.id = auth.uid()
+        AND p.role IN ('employee', 'admin')
+        AND p.approval_status = 'approved'
     )
   );
+
+-- Admin helpers (used by RLS)
+CREATE OR REPLACE FUNCTION public.is_admin()
+RETURNS BOOLEAN
+LANGUAGE sql
+STABLE
+SECURITY DEFINER
+SET search_path = public
+AS $$
+  SELECT EXISTS (
+    SELECT 1
+    FROM public.profiles p
+    WHERE p.id = auth.uid()
+      AND p.role = 'admin'
+      AND p.approval_status = 'approved'
+  );
+$$;
+
+REVOKE ALL ON FUNCTION public.is_admin() FROM PUBLIC;
+GRANT EXECUTE ON FUNCTION public.is_admin() TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.protect_profile_privileged_columns()
+RETURNS TRIGGER
+LANGUAGE plpgsql
+SECURITY DEFINER
+SET search_path = public
+AS $$
+BEGIN
+  IF auth.uid() IS NULL OR public.is_admin() THEN
+    RETURN NEW;
+  END IF;
+
+  IF NEW.role IS DISTINCT FROM OLD.role AND NEW.role = 'admin' THEN
+    NEW.role := OLD.role;
+  END IF;
+
+  IF NEW.approval_status IS DISTINCT FROM OLD.approval_status
+     AND NEW.approval_status = 'approved' THEN
+    NEW.approval_status := OLD.approval_status;
+  END IF;
+
+  NEW.reviewed_at := OLD.reviewed_at;
+  NEW.reviewed_by := OLD.reviewed_by;
+
+  RETURN NEW;
+END;
+$$;
+
+DROP TRIGGER IF EXISTS profiles_protect_privileged ON public.profiles;
+CREATE TRIGGER profiles_protect_privileged
+  BEFORE UPDATE ON public.profiles
+  FOR EACH ROW
+  EXECUTE FUNCTION public.protect_profile_privileged_columns();
 
 -- RLS: profiles + comments
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
@@ -113,6 +176,23 @@ CREATE POLICY "profiles_update_own" ON public.profiles
   FOR UPDATE TO authenticated
   USING (id = auth.uid())
   WITH CHECK (id = auth.uid());
+
+DROP POLICY IF EXISTS "profiles_update_admin" ON public.profiles;
+CREATE POLICY "profiles_update_admin" ON public.profiles
+  FOR UPDATE TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "jobs_insert_admin" ON public.jobs;
+CREATE POLICY "jobs_insert_admin" ON public.jobs
+  FOR INSERT TO authenticated
+  WITH CHECK (public.is_admin());
+
+DROP POLICY IF EXISTS "jobs_update_admin" ON public.jobs;
+CREATE POLICY "jobs_update_admin" ON public.jobs
+  FOR UPDATE TO authenticated
+  USING (public.is_admin())
+  WITH CHECK (public.is_admin());
 
 DROP POLICY IF EXISTS "comments_select_authenticated" ON public.comments;
 CREATE POLICY "comments_select_authenticated" ON public.comments
@@ -142,12 +222,20 @@ LANGUAGE plpgsql
 SECURITY DEFINER
 SET search_path = public
 AS $$
+DECLARE
+  requested TEXT;
 BEGIN
-  INSERT INTO public.profiles (id, full_name, role)
+  requested := COALESCE(NEW.raw_user_meta_data->>'role', 'client');
+  IF requested NOT IN ('employee', 'client') THEN
+    requested := 'client';
+  END IF;
+
+  INSERT INTO public.profiles (id, full_name, role, approval_status)
   VALUES (
     NEW.id,
     COALESCE(NEW.raw_user_meta_data->>'full_name', ''),
-    COALESCE(NEW.raw_user_meta_data->>'role', 'client')
+    requested,
+    'pending'
   )
   ON CONFLICT (id) DO NOTHING;
   RETURN NEW;

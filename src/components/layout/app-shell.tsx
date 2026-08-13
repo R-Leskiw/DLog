@@ -3,6 +3,7 @@ import type { ReactNode } from "react";
 import { SignOutButton } from "@/components/auth/sign-out-button";
 import { AppNavigation } from "@/components/layout/app-navigation";
 import type { UserRole } from "@/types/roles";
+import { isStaffRole } from "@/types/roles";
 
 export function AppShell({
   children,
@@ -15,7 +16,7 @@ export function AppShell({
     <div className="relative flex min-h-dvh flex-col md:flex-row">
       <AppNavigation role={role} />
       <div className="flex flex-1 flex-col md:pl-64">
-        {role === "employee" ? (
+        {isStaffRole(role) ? (
           <header className="hidden items-center justify-end border-b border-border px-6 py-2 md:flex">
             <SignOutButton variant="ghost" className="min-h-9" />
           </header>

@@ -12,17 +12,17 @@ import {
   getPendingRole,
 } from "@/lib/auth/pending-role";
 import { createClient } from "@/lib/supabase/client";
-import type { UserRole } from "@/types/roles";
+import type { RequestableRole } from "@/types/roles";
 import { cn } from "@/lib/utils";
 
 export function OnboardingForm({
   initialRole,
 }: {
-  initialRole: UserRole | null;
+  initialRole: RequestableRole | null;
 }) {
   const router = useRouter();
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<UserRole>(initialRole ?? "employee");
+  const [role, setRole] = useState<RequestableRole>(initialRole ?? "employee");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
 
@@ -51,6 +51,7 @@ export function OnboardingForm({
       id: user.id,
       full_name: fullName.trim(),
       role,
+      approval_status: "pending",
       updated_at: new Date().toISOString(),
     });
     setLoading(false);
@@ -59,14 +60,14 @@ export function OnboardingForm({
       return;
     }
     clearPendingRole();
-    router.push("/");
+    router.push("/pending-approval");
     router.refresh();
   }
 
   return (
     <AuthCard
       title="Complete your profile"
-      description="Tell us your name and confirm your role."
+      description="Tell us your name and request Employee or Client access. A company admin must approve you before you can use the app."
     >
       <form onSubmit={onSubmit} className="space-y-4">
         {error ? (
@@ -85,7 +86,7 @@ export function OnboardingForm({
           />
         </div>
         <div className="space-y-2">
-          <Label>Role</Label>
+          <Label>Requested role</Label>
           <div className="grid grid-cols-2 gap-2">
             {(["employee", "client"] as const).map((r) => (
               <button
@@ -105,7 +106,7 @@ export function OnboardingForm({
           </div>
         </div>
         <Button type="submit" className="min-h-11 w-full" disabled={loading}>
-          {loading ? "Saving…" : "Continue to feed"}
+          {loading ? "Saving…" : "Submit for approval"}
         </Button>
       </form>
     </AuthCard>
