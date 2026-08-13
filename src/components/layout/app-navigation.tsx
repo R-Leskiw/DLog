@@ -2,19 +2,15 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useState } from "react";
 import {
   ClipboardPlus,
   Home,
-  LogOut,
   MessageCircle,
   Settings,
   User,
 } from "lucide-react";
 
-import { SignOutButton } from "@/components/auth/sign-out-button";
 import { siteConfig } from "@/config/site";
-import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/roles";
 import { isStaffRole } from "@/types/roles";
@@ -73,46 +69,6 @@ function NavLink({
   );
 }
 
-function MobileSignOutNavItem({ className }: { className?: string }) {
-  const [loading, setLoading] = useState(false);
-
-  async function onSignOut() {
-    setLoading(true);
-    const supabase = createClient();
-    if (!supabase) {
-      setLoading(false);
-      return;
-    }
-    const { error } = await supabase.auth.signOut();
-    if (error) {
-      setLoading(false);
-      return;
-    }
-    window.location.assign("/login");
-  }
-
-  return (
-    <button
-      type="button"
-      disabled={loading}
-      onClick={() => void onSignOut()}
-      className={cn(
-        "flex flex-col items-center justify-center gap-0.5 rounded-lg text-muted-foreground transition-colors",
-        "min-h-11 min-w-11 touch-manipulation",
-        "hover:bg-muted hover:text-foreground",
-        "disabled:opacity-50",
-        className
-      )}
-      aria-label={loading ? "Signing out" : "Sign out"}
-    >
-      <LogOut className="size-6 shrink-0" aria-hidden />
-      <span className="text-[0.65rem] font-medium leading-none">
-        {loading ? "…" : "Sign out"}
-      </span>
-    </button>
-  );
-}
-
 export function AppNavigation({ role }: { role: UserRole }) {
   const navItems = isStaffRole(role)
     ? role === "admin"
@@ -137,11 +93,6 @@ export function AppNavigation({ role }: { role: UserRole }) {
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
-        {isStaffRole(role) ? (
-          <div className="border-t border-sidebar-border p-3">
-            <SignOutButton variant="ghost" className="min-h-11 w-full" />
-          </div>
-        ) : null}
       </aside>
 
       <nav
@@ -155,9 +106,6 @@ export function AppNavigation({ role }: { role: UserRole }) {
             className="flex-1 flex-row justify-center gap-1 px-1"
           />
         ))}
-        {isStaffRole(role) ? (
-          <MobileSignOutNavItem className="flex-1 flex-row justify-center gap-1 px-1" />
-        ) : null}
       </nav>
     </>
   );

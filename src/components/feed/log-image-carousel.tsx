@@ -6,14 +6,25 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 
-export function LogImageCarousel({ urls }: { urls: string[] }) {
+export function LogImageCarousel({
+  urls,
+  className,
+}: {
+  urls: string[];
+  className?: string;
+}) {
   const [index, setIndex] = useState(0);
   if (!urls.length) return null;
 
   const hasMany = urls.length > 1;
 
   return (
-    <div className="relative aspect-[4/3] w-full bg-muted">
+    <div
+      className={cn(
+        "relative aspect-[4/3] w-full bg-muted md:aspect-video md:max-h-[420px]",
+        className
+      )}
+    >
       {/* eslint-disable-next-line @next/next/no-img-element */}
       <img
         src={urls[index]}

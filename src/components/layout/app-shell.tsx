@@ -13,15 +13,15 @@ export function AppShell({
   role: UserRole;
 }) {
   return (
-    <div className="relative flex min-h-dvh flex-col md:flex-row">
+    <div className="relative flex min-h-dvh flex-col md:h-dvh md:flex-row md:overflow-hidden">
       <AppNavigation role={role} />
-      <div className="flex flex-1 flex-col md:pl-64">
+      <div className="flex min-h-0 flex-1 flex-col md:pl-64">
         {isStaffRole(role) ? (
           <header className="hidden items-center justify-end border-b border-border px-6 py-2 md:flex">
             <SignOutButton variant="ghost" className="min-h-9" />
           </header>
         ) : null}
-        <div className="flex flex-1 flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
+        <div className="flex min-h-0 flex-1 flex-col pb-[calc(3.75rem+env(safe-area-inset-bottom))] md:pb-0">
           {children}
         </div>
       </div>
