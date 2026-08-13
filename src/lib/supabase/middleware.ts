@@ -64,9 +64,19 @@ export async function updateSession(request: NextRequest) {
     return next;
   };
 
+  // Logged-in users on auth pages: send them to the right step, but do not
+  // redirect to the same path (that causes ERR_TOO_MANY_REDIRECTS).
   if (isLoggedIn && isAuthRoute(pathname)) {
-    if (!isVerified) return redirect("/verify-email");
-    if (!profileComplete) return redirect("/onboarding");
+    if (!isVerified) {
+      if (pathname === "/verify-email") return supabaseResponse;
+      return redirect("/verify-email");
+    }
+    if (!profileComplete) {
+      if (pathname === "/onboarding") return supabaseResponse;
+      return redirect("/onboarding");
+    }
+    // Allow password reset while signed in; otherwise leave auth chrome for the app.
+    if (pathname === "/reset-password") return supabaseResponse;
     return redirect("/");
   }
 
