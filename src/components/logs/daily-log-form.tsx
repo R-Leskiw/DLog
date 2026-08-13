@@ -311,7 +311,9 @@ export function DailyLogForm() {
                           id="log-job"
                           aria-invalid={!!errors.jobId}
                         >
-                          <SelectValue placeholder="Select a job" />
+                          <SelectValue placeholder="Select a job">
+                            {jobs.find((j) => j.id === field.value)?.name}
+                          </SelectValue>
                         </SelectTrigger>
                         <SelectContent>
                           {jobs.map((job) => (

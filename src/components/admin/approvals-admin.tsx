@@ -136,7 +136,11 @@ export function ApprovalsAdmin() {
                       }
                     >
                       <SelectTrigger className="min-h-11 w-full sm:w-40">
-                        <SelectValue placeholder="Role" />
+                        <SelectValue placeholder="Role">
+                          {roleDraft[row.id] === "client"
+                            ? "Client"
+                            : "Employee"}
+                        </SelectValue>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="employee">Employee</SelectItem>

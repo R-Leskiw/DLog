@@ -69,7 +69,11 @@ export function FeedFilters({
             id="filter-job"
             className={cn("w-full min-h-11 py-2.5", "data-[size=default]:h-11")}
           >
-            <SelectValue placeholder="All jobs" />
+            <SelectValue placeholder="All jobs">
+              {value.jobId === "all"
+                ? "All jobs"
+                : jobs.find((j) => j.id === value.jobId)?.name}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All jobs</SelectItem>
@@ -103,7 +107,11 @@ export function FeedFilters({
             id="filter-author"
             className={cn("w-full min-h-11 py-2.5", "data-[size=default]:h-11")}
           >
-            <SelectValue placeholder="All authors" />
+            <SelectValue placeholder="All authors">
+              {value.authorId === "all"
+                ? "All authors"
+                : authors.find((a) => a.id === value.authorId)?.name}
+            </SelectValue>
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All authors</SelectItem>
