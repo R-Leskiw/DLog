@@ -1,6 +1,6 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { createClient } from "@/lib/supabase/client";
@@ -12,21 +12,44 @@ export function SignOutButton({
   variant?: "outline" | "ghost" | "default";
   className?: string;
 }) {
-  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  async function onSignOut() {
+    setError(null);
+    setLoading(true);
+    const supabase = createClient();
+    if (!supabase) {
+      setError("Supabase is not configured.");
+      setLoading(false);
+      return;
+    }
+    const { error: signOutError } = await supabase.auth.signOut();
+    if (signOutError) {
+      setError(signOutError.message);
+      setLoading(false);
+      return;
+    }
+    // Hard navigation so cookies/session are fully cleared before the next page.
+    window.location.assign("/login");
+  }
 
   return (
-    <Button
-      type="button"
-      variant={variant}
-      className={className}
-      onClick={async () => {
-        const supabase = createClient();
-        if (supabase) await supabase.auth.signOut();
-        router.push("/");
-        router.refresh();
-      }}
-    >
-      Sign out
-    </Button>
+    <div className="flex w-full flex-col gap-1">
+      <Button
+        type="button"
+        variant={variant}
+        className={className}
+        disabled={loading}
+        onClick={() => void onSignOut()}
+      >
+        {loading ? "Signing out…" : "Sign out"}
+      </Button>
+      {error ? (
+        <p className="text-xs text-destructive" role="alert">
+          {error}
+        </p>
+      ) : null}
+    </div>
   );
 }
