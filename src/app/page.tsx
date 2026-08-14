@@ -9,6 +9,7 @@ import {
   isEmailVerified,
   isProfileComplete,
 } from "@/lib/auth/profile";
+import { isStaffRole } from "@/types/roles";
 
 export default async function HomePage() {
   if (
@@ -40,7 +41,7 @@ export default async function HomePage() {
 
   return (
     <AppShell role={role}>
-      <Feed />
+      <Feed canCreateLogs={isStaffRole(role)} />
     </AppShell>
   );
 }

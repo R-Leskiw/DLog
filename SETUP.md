@@ -10,7 +10,9 @@ Follow these steps in order. **Never commit** `.env.local` (it is gitignored).
    - anon public key → `NEXT_PUBLIC_SUPABASE_ANON_KEY`
 3. Paste into `.env.local` (copy from `.env.example` if needed).
 4. **SQL Editor** — run entire file: [`supabase/setup_all.sql`](supabase/setup_all.sql)
-5. **Existing projects that already ran setup earlier** — also run [`supabase/migrations/0003_admin_jobs_approvals.sql`](supabase/migrations/0003_admin_jobs_approvals.sql) (admin role, signup approvals, jobs edit policies).
+5. **Existing projects that already ran setup earlier** — also run:
+   - [`supabase/migrations/0003_admin_jobs_approvals.sql`](supabase/migrations/0003_admin_jobs_approvals.sql)
+   - [`supabase/migrations/0004_schedule_timeclock_messages_estimates.sql`](supabase/migrations/0004_schedule_timeclock_messages_estimates.sql) (schedule, timeclock, chat RLS, estimates)
 6. **Storage** — create bucket **`log-images`**, set **Public bucket** ON.
 7. **SQL Editor** — run [`supabase/storage_policies.sql`](supabase/storage_policies.sql)
 8. **Authentication → Providers** — enable Email.

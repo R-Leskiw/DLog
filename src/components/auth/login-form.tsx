@@ -30,12 +30,30 @@ export function LoginForm() {
       email,
       password,
     });
-    setLoading(false);
     if (signInError) {
+      setLoading(false);
       setError(signInError.message);
       return;
     }
-    router.push("/");
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+    let dest = "/";
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, approval_status")
+        .eq("id", user.id)
+        .maybeSingle();
+      if (
+        profile?.approval_status === "approved" &&
+        (profile.role === "employee" || profile.role === "admin")
+      ) {
+        dest = "/dashboard";
+      }
+    }
+    setLoading(false);
+    router.push(dest);
     router.refresh();
   }
 

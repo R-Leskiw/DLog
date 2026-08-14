@@ -7,6 +7,7 @@ import {
   isEmployeeOnlyRoute,
   isProtectedAppRoute,
 } from "@/lib/auth/routes";
+import { postLoginPath } from "@/lib/auth/home-path";
 import type { ApprovalStatus, UserRole } from "@/types/roles";
 import { isStaffRole } from "@/types/roles";
 
@@ -91,7 +92,7 @@ export async function updateSession(request: NextRequest) {
     }
     // Allow password reset while signed in; otherwise leave auth chrome for the app.
     if (pathname === "/reset-password") return supabaseResponse;
-    return redirect("/");
+    return redirect(postLoginPath(role));
   }
 
   if (!isLoggedIn && isProtectedAppRoute(pathname)) {

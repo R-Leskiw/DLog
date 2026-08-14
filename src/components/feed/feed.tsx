@@ -1,9 +1,11 @@
 "use client";
 
 import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
+import { Camera } from "lucide-react";
 
-import { FeedCard } from "@/components/feed/feed-card";
 import { FeedDetail } from "@/components/feed/feed-detail";
+import { FeedMobileCard } from "@/components/feed/feed-mobile-card";
 import {
   EMPTY_FEED_FILTERS,
   FeedFilters,
@@ -42,7 +44,7 @@ function sanitizeSearch(raw: string) {
   return raw.trim().replace(/[%_,()]/g, "");
 }
 
-export function Feed() {
+export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
   const [logs, setLogs] = useState<FeedLog[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -269,12 +271,12 @@ export function Feed() {
         </p>
       ) : (
         <>
-          <div className="space-y-6 px-2 py-4 sm:px-4 md:hidden">
+          <div className="block md:hidden">
             {logs.map((log) => (
-              <FeedCard key={log.id} log={log} />
+              <FeedMobileCard key={log.id} log={log} />
             ))}
             {hasMore ? (
-              <div className="flex justify-center pb-4">
+              <div className="flex justify-center py-4">
                 <Button
                   type="button"
                   variant="outline"
@@ -298,6 +300,20 @@ export function Feed() {
           </div>
         </>
       )}
+
+      {canCreateLogs ? (
+        <Link
+          href="/logs/new"
+          aria-label="Add photo to daily log"
+          className="fixed z-50 flex size-14 min-h-11 min-w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
+          style={{
+            bottom: "calc(4.5rem + env(safe-area-inset-bottom))",
+            right: "1rem",
+          }}
+        >
+          <Camera className="size-7" aria-hidden />
+        </Link>
+      ) : null}
     </main>
   );
 }

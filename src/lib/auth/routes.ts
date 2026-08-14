@@ -8,7 +8,15 @@ export const AUTH_ROUTES = [
   "/pending-approval",
 ] as const;
 
-export const EMPLOYEE_ONLY_PREFIXES = ["/logs/new", "/chat"] as const;
+export const EMPLOYEE_ONLY_PREFIXES = [
+  "/logs/new",
+  "/chat",
+  "/dashboard",
+  "/schedule",
+  "/timeclock",
+  "/messages",
+  "/estimates",
+] as const;
 
 export const ADMIN_ONLY_PREFIXES = ["/admin"] as const;
 
@@ -37,6 +45,11 @@ export function isProtectedAppRoute(pathname: string): boolean {
     pathname.startsWith("/logs") ||
     pathname.startsWith("/chat") ||
     pathname.startsWith("/profile") ||
-    pathname.startsWith("/admin")
+    pathname.startsWith("/admin") ||
+    pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/schedule") ||
+    pathname.startsWith("/timeclock") ||
+    pathname.startsWith("/messages") ||
+    pathname.startsWith("/estimates")
   );
 }

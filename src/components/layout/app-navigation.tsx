@@ -3,8 +3,9 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  ClipboardList,
   ClipboardPlus,
-  Home,
+  LayoutDashboard,
   MessageCircle,
   Settings,
   User,
@@ -16,20 +17,22 @@ import type { UserRole } from "@/types/roles";
 import { isStaffRole } from "@/types/roles";
 
 const staffNav = [
-  { href: "/", label: "Feed", icon: Home },
-  { href: "/logs/new", label: "Add log", icon: ClipboardPlus },
-  { href: "/chat", label: "Chat", icon: MessageCircle },
+  { href: "/dashboard", label: "Home", icon: LayoutDashboard, mobile: true },
+  { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
+  { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
+  { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
 ] as const;
 
 const clientNav = [
-  { href: "/", label: "Feed", icon: Home },
-  { href: "/profile", label: "Profile", icon: User },
+  { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
+  { href: "/profile", label: "Profile", icon: User, mobile: true },
 ] as const;
 
 const adminNavItem = {
   href: "/admin",
   label: "Admin",
   icon: Settings,
+  mobile: true,
 } as const;
 
 function NavLink({
@@ -99,13 +102,15 @@ export function AppNavigation({ role }: { role: UserRole }) {
         className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
         aria-label="Main navigation"
       >
-        {navItems.map((item) => (
-          <NavLink
-            key={item.href}
-            {...item}
-            className="flex-1 flex-row justify-center gap-1 px-1"
-          />
-        ))}
+        {navItems
+          .filter((item) => item.mobile)
+          .map((item) => (
+            <NavLink
+              key={item.href}
+              {...item}
+              className="flex-1 flex-row justify-center gap-1 px-1"
+            />
+          ))}
       </nav>
     </>
   );
