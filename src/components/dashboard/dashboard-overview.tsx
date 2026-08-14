@@ -239,6 +239,7 @@ export function DashboardOverview({ data }: { data: DashboardOverview }) {
         <Widget
           title="Clocked in"
           icon={Timer}
+          href="/timeclock"
           empty={data.clockedIn.length === 0}
         >
           <ul className="space-y-2 text-sm">

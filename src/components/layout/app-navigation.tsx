@@ -9,6 +9,7 @@ import {
   LayoutDashboard,
   MessageCircle,
   Settings,
+  Timer,
   User,
 } from "lucide-react";
 
@@ -21,8 +22,9 @@ const staffNav = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, mobile: true },
   { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
   { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
+  { href: "/timeclock", label: "Clock", icon: Timer, mobile: true },
   { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
-  { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
+  { href: "/chat", label: "Chat", icon: MessageCircle, mobile: false },
 ] as const;
 
 const clientNav = [
