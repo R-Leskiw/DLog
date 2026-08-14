@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  CalendarDays,
   ClipboardList,
   ClipboardPlus,
   LayoutDashboard,
@@ -19,6 +20,7 @@ import { isStaffRole } from "@/types/roles";
 const staffNav = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, mobile: true },
   { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
   { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
   { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
 ] as const;

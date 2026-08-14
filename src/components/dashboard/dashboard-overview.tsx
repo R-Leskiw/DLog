@@ -195,6 +195,7 @@ export function DashboardOverview({ data }: { data: DashboardOverview }) {
         <Widget
           title="Today’s schedule"
           icon={CalendarDays}
+          href="/schedule"
           empty={data.todaysTasks.length === 0}
         >
           <ul className="space-y-2 text-sm">
