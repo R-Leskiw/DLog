@@ -6,6 +6,7 @@ import {
   CalendarDays,
   ClipboardList,
   ClipboardPlus,
+  FileSpreadsheet,
   LayoutDashboard,
   MessageCircle,
   Settings,
@@ -24,6 +25,7 @@ const staffNav = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
   { href: "/timeclock", label: "Clock", icon: Timer, mobile: true },
   { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
+  { href: "/estimates", label: "Estimates", icon: FileSpreadsheet, mobile: false },
   { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
 ] as const;
 
@@ -86,7 +88,7 @@ export function AppNavigation({ role }: { role: UserRole }) {
   return (
     <>
       <aside
-        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex"
+        className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-sidebar-border bg-sidebar md:flex print:hidden"
         aria-label="Main navigation"
       >
         <div className="border-b border-sidebar-border px-4 py-5">
@@ -103,7 +105,7 @@ export function AppNavigation({ role }: { role: UserRole }) {
       </aside>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden print:hidden"
         aria-label="Main navigation"
       >
         {navItems

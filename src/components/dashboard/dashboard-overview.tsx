@@ -1,5 +1,11 @@
 import type { ComponentType, ReactNode } from "react";
-import { CalendarDays, ClipboardList, MessageCircle, Timer } from "lucide-react";
+import {
+  CalendarDays,
+  ClipboardList,
+  FileSpreadsheet,
+  MessageCircle,
+  Timer,
+} from "lucide-react";
 import Link from "next/link";
 
 import {
@@ -9,12 +15,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { createClient } from "@/lib/supabase/server";
+import { statusLabel, type EstimateStatus } from "@/types/estimates";
 
 export type DashboardOverview = {
   todaysTasks: { id: string; title: string; jobName: string | null }[];
   recentLogs: { id: string; title: string | null; date: string; jobName: string | null }[];
   unreadCount: number;
   clockedIn: { id: string; name: string; jobName: string | null }[];
+  recentEstimates: { id: string; title: string; status: string; jobName: string | null }[];
   schemaReady: boolean;
 };
 
@@ -29,6 +37,7 @@ export async function loadDashboardOverview(): Promise<DashboardOverview> {
     recentLogs: [],
     unreadCount: 0,
     clockedIn: [],
+    recentEstimates: [],
     schemaReady: true,
   };
 
@@ -75,8 +84,14 @@ export async function loadDashboardOverview(): Promise<DashboardOverview> {
     .select("id, user_id, job_id, jobs(name)")
     .is("clock_out", null);
 
+  const estimatesRes = await supabase
+    .from("estimates")
+    .select("id, title, status, jobs(name)")
+    .order("updated_at", { ascending: false })
+    .limit(5);
+
   if (
-    [tasksRes.error, messagesRes.error, readsRes.error, clockRes.error].some(
+    [tasksRes.error, messagesRes.error, readsRes.error, clockRes.error, estimatesRes.error].some(
       (e) => e && isMissingRelation(e.message)
     )
   ) {
@@ -129,6 +144,12 @@ export async function loadDashboardOverview(): Promise<DashboardOverview> {
       name: nameById.get(r.user_id) ?? "Team member",
       jobName: jobName(r.jobs as { name: string } | { name: string }[] | null),
     })),
+    recentEstimates: (estimatesRes.data ?? []).map((e) => ({
+      id: e.id,
+      title: e.title,
+      status: e.status,
+      jobName: jobName(e.jobs as { name: string } | { name: string }[] | null),
+    })),
   };
 }
 
@@ -176,7 +197,7 @@ export function DashboardOverview({ data }: { data: DashboardOverview }) {
       <header>
         <h1 className="font-heading text-3xl md:text-4xl">Overview</h1>
         <p className="mt-1 text-muted-foreground">
-          Today’s jobs, logs, messages, and who’s on the clock.
+          Today’s jobs, logs, messages, estimates, and who’s on the clock.
         </p>
       </header>
 
@@ -249,6 +270,25 @@ export function DashboardOverview({ data }: { data: DashboardOverview }) {
                 {p.jobName ? (
                   <p className="text-xs text-muted-foreground">{p.jobName}</p>
                 ) : null}
+              </li>
+            ))}
+          </ul>
+        </Widget>
+
+        <Widget
+          title="Estimates"
+          icon={FileSpreadsheet}
+          href="/estimates"
+          empty={data.recentEstimates.length === 0}
+        >
+          <ul className="space-y-2 text-sm">
+            {data.recentEstimates.map((e) => (
+              <li key={e.id}>
+                <p className="font-medium">{e.title.trim() || "Untitled estimate"}</p>
+                <p className="text-xs text-muted-foreground">
+                  {statusLabel(e.status as EstimateStatus)}
+                  {e.jobName ? ` · ${e.jobName}` : ""}
+                </p>
               </li>
             ))}
           </ul>

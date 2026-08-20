@@ -15,9 +15,9 @@ export function AppShell({
   return (
     <div className="relative flex min-h-dvh flex-col md:h-dvh md:flex-row md:overflow-hidden">
       <AppNavigation role={role} />
-      <div className="flex min-h-0 flex-1 flex-col md:pl-64">
+      <div className="flex min-h-0 flex-1 flex-col md:pl-64 print:pl-0">
         {isStaffRole(role) ? (
-          <header className="hidden items-center justify-end border-b border-border px-6 py-2 md:flex">
+          <header className="hidden items-center justify-end border-b border-border px-6 py-2 md:flex print:hidden">
             <SignOutButton variant="ghost" className="min-h-9" />
           </header>
         ) : null}
