@@ -229,7 +229,7 @@ export function DashboardOverview({ data }: { data: DashboardOverview }) {
           </ul>
         </Widget>
 
-        <Widget title="Unread messages" icon={MessageCircle}>
+        <Widget title="Unread messages" icon={MessageCircle} href="/chat">
           <p className="font-heading text-4xl tabular-nums">{data.unreadCount}</p>
           <p className="mt-1 text-sm text-muted-foreground">
             Team chat messages you haven’t opened yet.

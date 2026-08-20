@@ -47,5 +47,6 @@ CREATE TABLE messages (
   id UUID DEFAULT gen_random_uuid() PRIMARY KEY,
   sender_id UUID REFERENCES auth.users(id),
   content TEXT NOT NULL,
+  image_urls TEXT[],
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
 );

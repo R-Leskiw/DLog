@@ -24,7 +24,7 @@ const staffNav = [
   { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
   { href: "/timeclock", label: "Clock", icon: Timer, mobile: true },
   { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
-  { href: "/chat", label: "Chat", icon: MessageCircle, mobile: false },
+  { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
 ] as const;
 
 const clientNav = [

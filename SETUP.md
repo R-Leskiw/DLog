@@ -14,6 +14,7 @@ Follow these steps in order. **Never commit** `.env.local` (it is gitignored).
    - [`supabase/migrations/0003_admin_jobs_approvals.sql`](supabase/migrations/0003_admin_jobs_approvals.sql)
    - [`supabase/migrations/0004_schedule_timeclock_messages_estimates.sql`](supabase/migrations/0004_schedule_timeclock_messages_estimates.sql) (schedule, timeclock, chat RLS, estimates)
    - [`supabase/migrations/0005_timeclock_breaks.sql`](supabase/migrations/0005_timeclock_breaks.sql) (breaks, edit/add shifts)
+   - [`supabase/migrations/0006_chat_image_urls.sql`](supabase/migrations/0006_chat_image_urls.sql) (photos in team chat)
 6. **Storage** — create bucket **`log-images`**, set **Public bucket** ON.
 7. **SQL Editor** — run [`supabase/storage_policies.sql`](supabase/storage_policies.sql)
 8. **Authentication → Providers** — enable Email.
@@ -93,6 +94,7 @@ This app needs a Node host (middleware, auth callback). **Use Vercel**, not GitH
 - [ ] Supabase project healthy
 - [ ] `setup_all.sql` ran without errors
 - [ ] Existing DB: `0003_admin_jobs_approvals.sql` ran
+- [ ] Existing DB: `0006_chat_image_urls.sql` ran (chat photos)
 - [ ] First admin promoted via SQL (your email)
 - [ ] `log-images` bucket + `storage_policies.sql`
 - [ ] `.env.local` filled; local sign-up works
