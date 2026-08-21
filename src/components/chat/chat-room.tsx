@@ -141,23 +141,30 @@ export function ChatRoom() {
         .eq("user_id", user.id);
 
       let withPhotos = true;
-      let messagesRes = await supabase
+      const withPhotosRes = await supabase
         .from("messages")
         .select("id, sender_id, content, created_at, image_urls")
         .order("created_at", { ascending: true })
         .limit(300);
 
-      if (messagesRes.error && isMissingImageColumn(messagesRes.error.message)) {
+      let rows: MessageRow[] = [];
+      let messagesError = withPhotosRes.error;
+
+      if (messagesError && isMissingImageColumn(messagesError.message)) {
         withPhotos = false;
-        messagesRes = await supabase
+        const fallbackRes = await supabase
           .from("messages")
           .select("id, sender_id, content, created_at")
           .order("created_at", { ascending: true })
           .limit(300);
+        messagesError = fallbackRes.error;
+        rows = (fallbackRes.data ?? []) as MessageRow[];
+      } else {
+        rows = (withPhotosRes.data ?? []) as MessageRow[];
       }
       setPhotosEnabled(withPhotos);
 
-      const missing = [messagesRes.error, readsRes.error].find(
+      const missing = [messagesError, readsRes.error].find(
         (e) => e && isMissingRelation(e.message)
       );
       if (missing) {
@@ -168,13 +175,11 @@ export function ChatRoom() {
       }
       setSchemaReady(true);
 
-      if (messagesRes.error) {
-        setError(messagesRes.error.message);
+      if (messagesError) {
+        setError(messagesError.message);
         setLoading(false);
         return;
       }
-
-      const rows = (messagesRes.data ?? []) as MessageRow[];
       const nameById = await loadNames(
         supabase,
         rows.map((r) => r.sender_id),
