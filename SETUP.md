@@ -15,8 +15,11 @@ Follow these steps in order. **Never commit** `.env.local` (it is gitignored).
    - [`supabase/migrations/0004_schedule_timeclock_messages_estimates.sql`](supabase/migrations/0004_schedule_timeclock_messages_estimates.sql) (schedule, timeclock, chat RLS, estimates)
    - [`supabase/migrations/0005_timeclock_breaks.sql`](supabase/migrations/0005_timeclock_breaks.sql) (breaks, edit/add shifts)
    - [`supabase/migrations/0006_chat_image_urls.sql`](supabase/migrations/0006_chat_image_urls.sql) (photos in team chat)
+   - [`supabase/migrations/0007_estimate_proposals.sql`](supabase/migrations/0007_estimate_proposals.sql) (e-sign, versions, share links, `estimate-docs` bucket)
+   - [`supabase/migrations/0008_job_clients.sql`](supabase/migrations/0008_job_clients.sql) (multiple clients per job)
 6. **Storage** — create bucket **`log-images`**, set **Public bucket** ON.
 7. **SQL Editor** — run [`supabase/storage_policies.sql`](supabase/storage_policies.sql)
+   The `estimate-docs` bucket is created by `0007` (private). Contract PDFs and signatures are served via signed URLs / API routes.
 8. **Authentication → Providers** — enable Email.
 9. **Authentication → URL Configuration**:
 
@@ -83,6 +86,8 @@ This app needs a Node host (middleware, auth callback). **Use Vercel**, not GitH
 2. Add environment variables (Production + Preview):
    - `NEXT_PUBLIC_SUPABASE_URL`
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `SUPABASE_SERVICE_ROLE_KEY` (Project Settings → API → service_role; server-only)
+   - `RESEND_API_KEY` and `RESEND_FROM` (optional; needed to email estimate links)
 3. Deploy and copy your URL, e.g. `https://your-app.vercel.app`.
 4. In Supabase **Authentication → URL Configuration**, add:
    - Site URL: `https://your-app.vercel.app`
@@ -95,6 +100,8 @@ This app needs a Node host (middleware, auth callback). **Use Vercel**, not GitH
 - [ ] `setup_all.sql` ran without errors
 - [ ] Existing DB: `0003_admin_jobs_approvals.sql` ran
 - [ ] Existing DB: `0006_chat_image_urls.sql` ran (chat photos)
+- [ ] Existing DB: `0007_estimate_proposals.sql` ran (estimate e-sign)
+- [ ] Existing DB: `0008_job_clients.sql` ran (multiple clients per job)
 - [ ] First admin promoted via SQL (your email)
 - [ ] `log-images` bucket + `storage_policies.sql`
 - [ ] `.env.local` filled; local sign-up works

@@ -1,29 +1,29 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 
-import { JobsAdmin } from "@/components/admin/jobs-admin";
+import { ContractAdmin } from "@/components/admin/contract-admin";
 import { getSessionUser } from "@/lib/auth/profile";
 
-export default async function AdminJobsPage() {
+export default async function AdminContractPage() {
   const { profile } = await getSessionUser();
   if (profile?.role !== "admin") redirect("/");
 
   return (
-    <main className="mx-auto flex min-h-0 w-full max-w-5xl flex-1 flex-col gap-6 overflow-y-auto px-4 py-6 md:px-8 md:py-8">
+    <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
       <header className="space-y-1">
         <p className="text-sm text-muted-foreground">
           <Link href="/admin" className="underline hover:text-foreground">
             Admin
           </Link>{" "}
-          / Jobs
+          / Contract
         </p>
-        <h1 className="text-3xl md:text-4xl">Jobs</h1>
+        <h1 className="text-3xl md:text-4xl">Company contract</h1>
         <p className="text-muted-foreground">
-          Manage job sites shown when employees create daily logs. Add every
-          client contact (both spouses, extras) so estimates go to all of them.
+          Upload a standard contract PDF. It is appended to every estimate the
+          client reviews and signs.
         </p>
       </header>
-      <JobsAdmin />
+      <ContractAdmin />
     </main>
   );
 }

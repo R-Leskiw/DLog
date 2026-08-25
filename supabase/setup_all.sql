@@ -259,3 +259,25 @@ FROM (
     ('HQ Parking Structure', true)
 ) AS v(name, is_active)
 WHERE NOT EXISTS (SELECT 1 FROM public.jobs j WHERE j.name = v.name);
+
+-- -----------------------------------------------------------------------------
+-- Estimate proposals (0007). Requires estimates tables from migration 0004.
+-- Job client columns are safe on a fresh install; estimate alters no-op if
+-- 0004 has not been run yet.
+-- -----------------------------------------------------------------------------
+ALTER TABLE public.jobs
+  ADD COLUMN IF NOT EXISTS client_name TEXT,
+  ADD COLUMN IF NOT EXISTS client_email TEXT,
+  ADD COLUMN IF NOT EXISTS client_user_id UUID REFERENCES public.profiles(id) ON DELETE SET NULL;
+
+CREATE INDEX IF NOT EXISTS jobs_client_user_id_idx ON public.jobs (client_user_id);
+
+CREATE TABLE IF NOT EXISTS public.company_settings (
+  id INT PRIMARY KEY DEFAULT 1 CHECK (id = 1),
+  contract_pdf_path TEXT,
+  updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+
+INSERT INTO public.company_settings (id)
+VALUES (1)
+ON CONFLICT (id) DO NOTHING;

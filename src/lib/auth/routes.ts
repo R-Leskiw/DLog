@@ -50,6 +50,7 @@ export function isProtectedAppRoute(pathname: string): boolean {
     pathname.startsWith("/schedule") ||
     pathname.startsWith("/timeclock") ||
     pathname.startsWith("/messages") ||
-    pathname.startsWith("/estimates")
+    pathname.startsWith("/estimates") ||
+    pathname.startsWith("/my-estimates")
   );
 }

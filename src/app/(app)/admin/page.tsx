@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { Briefcase, UserCheck } from "lucide-react";
+import { Briefcase, FileText, UserCheck } from "lucide-react";
 
 import { getSessionUser } from "@/lib/auth/profile";
 import { cn } from "@/lib/utils";
@@ -13,8 +13,14 @@ export default async function AdminPage() {
     {
       href: "/admin/jobs",
       title: "Jobs",
-      description: "Add, rename, and activate or deactivate job sites.",
+      description: "Add job sites and multiple client contacts for estimates.",
       icon: Briefcase,
+    },
+    {
+      href: "/admin/contract",
+      title: "Contract PDF",
+      description: "Upload the company contract appended to sent estimates.",
+      icon: FileText,
     },
     {
       href: "/admin/approvals",

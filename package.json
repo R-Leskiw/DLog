@@ -20,9 +20,11 @@
     "clsx": "^2.1.1",
     "lucide-react": "^1.14.0",
     "next": "15.1.9",
+    "pdf-lib": "^1.17.1",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.75.0",
+    "resend": "^6.22.1",
     "tailwind-merge": "^3.6.0",
     "zod": "^4.4.3"
   },

@@ -24,3 +24,6 @@ CREATE POLICY "log_images_insert_authenticated"
 --   FOR SELECT
 --   TO authenticated
 --   USING (bucket_id = 'log-images');
+
+-- Private `estimate-docs` bucket + policies are created by
+-- supabase/migrations/0007_estimate_proposals.sql

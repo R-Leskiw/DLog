@@ -1,8 +1,18 @@
+export type JobClient = {
+  id?: string;
+  job_id?: string;
+  full_name: string;
+  email: string;
+  client_user_id: string | null;
+  sort_order?: number;
+};
+
 export type Job = {
   id: string;
   name: string;
   is_active: boolean;
   created_at?: string;
+  clients?: JobClient[];
 };
 
 export type DailyLogInsert = {

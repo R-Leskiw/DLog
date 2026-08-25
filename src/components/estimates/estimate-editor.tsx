@@ -3,19 +3,20 @@
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import type { Job } from "@/types/logs";
 import {
-  ESTIMATE_STATUSES,
+  formatClientNames,
   LINE_CATEGORIES,
   categoryLabel,
   emptyLine,
   estimateTotals,
   formatMoney,
+  isEstimateLocked,
   lineTotal,
   statusLabel,
   type Estimate,
   type EstimateLine,
-  type EstimateStatus,
   type LineCategory,
   NEW_JOB_VALUE,
 } from "@/types/estimates";
@@ -25,19 +26,27 @@ export function EstimateEditor({
   estimate,
   canEdit,
   saving,
+  sending,
+  shareUrl,
   onChange,
   onSave,
   onCancel,
   onDelete,
+  onSend,
+  onDuplicate,
 }: {
   jobs: Job[];
   estimate: Estimate;
   canEdit: boolean;
   saving: boolean;
+  sending?: boolean;
+  shareUrl?: string | null;
   onChange: (next: Estimate) => void;
   onSave: () => void;
   onCancel: () => void;
   onDelete?: () => void;
+  onSend?: () => void;
+  onDuplicate?: () => void;
 }) {
   const totals = estimateTotals(
     estimate.lines,
@@ -45,6 +54,16 @@ export function EstimateEditor({
     estimate.tax_percent
   );
   const isNew = estimate.id.startsWith("new-");
+  const locked = isEstimateLocked(estimate);
+  const selectedJob = jobs.find((j) => j.id === estimate.job_id);
+  const clients = selectedJob?.clients?.length
+    ? selectedJob.clients
+    : estimate.clients;
+  const clientSummary = formatClientNames(clients);
+  const emailSummary = clients
+    .map((c) => c.email.trim())
+    .filter(Boolean)
+    .join(", ");
 
   function patch(partial: Partial<Estimate>) {
     onChange({ ...estimate, ...partial });
@@ -63,16 +82,34 @@ export function EstimateEditor({
     <div className="space-y-6 print:space-y-4">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
         <div>
+          <p className="text-sm text-muted-foreground">
+            V{estimate.version || 1} · {statusLabel(estimate.status)}
+            {locked ? " · Locked" : ""}
+          </p>
           <h2 className="font-heading text-2xl">
             {isNew ? "New estimate" : estimate.title.trim() || "Estimate"}
           </h2>
           <p className="text-sm text-muted-foreground print:hidden">
-            {canEdit
-              ? "Line items, markup, and tax. Totals update as you type."
-              : "View only — ask an admin to edit this estimate."}
+            {locked
+              ? "This estimate is locked. Duplicate it to make changes."
+              : canEdit
+                ? "Line items, markup, tax, and a cover note. Send it for the client to sign."
+                : "View only — ask an admin to edit this estimate."}
           </p>
         </div>
         <div className="flex flex-wrap gap-2 print:hidden">
+          {!isNew ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={() =>
+                window.open(`/api/estimates/${estimate.id}/pdf`, "_blank")
+              }
+            >
+              View PDF
+            </Button>
+          ) : null}
           <Button
             type="button"
             variant="outline"
@@ -81,6 +118,17 @@ export function EstimateEditor({
           >
             Print
           </Button>
+          {onDuplicate && !isNew ? (
+            <Button
+              type="button"
+              variant="outline"
+              className="min-h-11"
+              onClick={onDuplicate}
+              disabled={saving}
+            >
+              Duplicate as V{(estimate.version || 1) + 1}
+            </Button>
+          ) : null}
           {canEdit ? (
             <>
               <Button
@@ -97,6 +145,7 @@ export function EstimateEditor({
                 onClick={onSave}
                 disabled={
                   saving ||
+                  sending ||
                   !estimate.title.trim() ||
                   (estimate.job_id === NEW_JOB_VALUE &&
                     !estimate.newJobName?.trim())
@@ -117,6 +166,38 @@ export function EstimateEditor({
           )}
         </div>
       </div>
+
+      {onSend && canEdit ? (
+        <div className="space-y-2 rounded-xl border border-border bg-muted/30 p-4 print:hidden">
+          <p className="text-sm">
+            Sending requires a job name and at least one client name + email.
+            Add contacts under Admin → Jobs (both spouses, extras, etc.).
+          </p>
+          <p className="text-xs text-muted-foreground">
+            Clients: {clientSummary || "none yet"}
+            {emailSummary ? ` · ${emailSummary}` : ""}
+          </p>
+          <div className="flex flex-wrap gap-2">
+            <Button
+              type="button"
+              className="min-h-11"
+              onClick={onSend}
+              disabled={saving || sending}
+            >
+              {sending
+                ? "Sending…"
+                : estimate.status === "sent"
+                  ? "Resend to clients"
+                  : "Send to clients"}
+            </Button>
+          </div>
+          {shareUrl ? (
+            <p className="break-all text-xs text-muted-foreground">
+              Share link: {shareUrl}
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div className="grid gap-3 sm:grid-cols-2">
         <div className="space-y-1.5">
@@ -143,14 +224,18 @@ export function EstimateEditor({
                   job_id: NEW_JOB_VALUE,
                   newJobName: estimate.newJobName ?? "",
                   jobName: null,
+                  clients: [],
+                  clientName: null,
                 });
                 return;
               }
+              const job = jobs.find((j) => j.id === value);
               patch({
                 job_id: value || null,
                 newJobName: undefined,
-                jobName:
-                  jobs.find((j) => j.id === value)?.name ?? null,
+                jobName: job?.name ?? null,
+                clients: job?.clients ?? [],
+                clientName: formatClientNames(job?.clients ?? []) || null,
               });
             }}
             disabled={!canEdit}
@@ -177,60 +262,54 @@ export function EstimateEditor({
               onChange={(e) => patch({ newJobName: e.target.value })}
             />
             <p className="text-xs text-muted-foreground">
-              This job will also appear in daily logs, timeclock, schedule, and
-              filters.
+              After saving, add clients (name + email) on the Jobs page before
+              sending. You can add both spouses.
             </p>
           </div>
         ) : null}
         <div className="space-y-1.5">
-          <Label htmlFor="est-status">Status</Label>
-          <select
-            id="est-status"
-            className="flex min-h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-            value={estimate.status}
+          <Label htmlFor="est-markup">Markup %</Label>
+          <Input
+            id="est-markup"
+            type="number"
+            min={0}
+            step="0.1"
+            className="min-h-11"
+            value={estimate.markup_percent}
             onChange={(e) =>
-              patch({ status: e.target.value as EstimateStatus })
+              patch({ markup_percent: Number(e.target.value) || 0 })
             }
             disabled={!canEdit}
-          >
-            {ESTIMATE_STATUSES.map((status) => (
-              <option key={status} value={status}>
-                {statusLabel(status)}
-              </option>
-            ))}
-          </select>
+          />
         </div>
-        <div className="grid grid-cols-2 gap-3">
-          <div className="space-y-1.5">
-            <Label htmlFor="est-markup">Markup %</Label>
-            <Input
-              id="est-markup"
-              type="number"
-              min={0}
-              step="0.1"
-              className="min-h-11"
-              value={estimate.markup_percent}
-              onChange={(e) =>
-                patch({ markup_percent: Number(e.target.value) || 0 })
-              }
-              disabled={!canEdit}
-            />
-          </div>
-          <div className="space-y-1.5">
-            <Label htmlFor="est-tax">Tax %</Label>
-            <Input
-              id="est-tax"
-              type="number"
-              min={0}
-              step="0.1"
-              className="min-h-11"
-              value={estimate.tax_percent}
-              onChange={(e) =>
-                patch({ tax_percent: Number(e.target.value) || 0 })
-              }
-              disabled={!canEdit}
-            />
-          </div>
+        <div className="space-y-1.5">
+          <Label htmlFor="est-tax">Tax %</Label>
+          <Input
+            id="est-tax"
+            type="number"
+            min={0}
+            step="0.1"
+            className="min-h-11"
+            value={estimate.tax_percent}
+            onChange={(e) =>
+              patch({ tax_percent: Number(e.target.value) || 0 })
+            }
+            disabled={!canEdit}
+          />
+        </div>
+        <div className="space-y-1.5 sm:col-span-2">
+          <Label htmlFor="est-cover">Cover note</Label>
+          <Textarea
+            id="est-cover"
+            className="min-h-24"
+            value={estimate.cover_note}
+            onChange={(e) => patch({ cover_note: e.target.value })}
+            disabled={!canEdit}
+            placeholder="Use {{client_name}}, {{job_name}}, and {{total_price}}."
+          />
+          <p className="text-xs text-muted-foreground">
+            Placeholders: {"{{client_name}}"}, {"{{job_name}}"}, {"{{total_price}}"}
+          </p>
         </div>
       </div>
 

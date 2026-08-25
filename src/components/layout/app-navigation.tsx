@@ -31,6 +31,7 @@ const staffNav = [
 
 const clientNav = [
   { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
+  { href: "/my-estimates", label: "Estimates", icon: FileSpreadsheet, mobile: true },
   { href: "/profile", label: "Profile", icon: User, mobile: true },
 ] as const;
 
