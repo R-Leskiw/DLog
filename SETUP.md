@@ -17,6 +17,7 @@ Follow these steps in order. **Never commit** `.env.local` (it is gitignored).
    - [`supabase/migrations/0006_chat_image_urls.sql`](supabase/migrations/0006_chat_image_urls.sql) (photos in team chat)
    - [`supabase/migrations/0007_estimate_proposals.sql`](supabase/migrations/0007_estimate_proposals.sql) (e-sign, versions, share links, `estimate-docs` bucket)
    - [`supabase/migrations/0008_job_clients.sql`](supabase/migrations/0008_job_clients.sql) (multiple clients per job)
+   - [`supabase/migrations/0009_schedule_gantt_deps_templates.sql`](supabase/migrations/0009_schedule_gantt_deps_templates.sql) (Gantt dependencies + schedule templates)
 6. **Storage** — create bucket **`log-images`**, set **Public bucket** ON.
 7. **SQL Editor** — run [`supabase/storage_policies.sql`](supabase/storage_policies.sql)
    The `estimate-docs` bucket is created by `0007` (private). Contract PDFs and signatures are served via signed URLs / API routes.
