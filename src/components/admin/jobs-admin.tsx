@@ -12,15 +12,22 @@ import { cn } from "@/lib/utils";
 
 type ClientOption = { id: string; full_name: string | null };
 
-type Draft = { name: string; email: string; userId: string };
+type Draft = { key: string; name: string; email: string; userId: string };
 
-const emptyDraft = (): Draft => ({ name: "", email: "", userId: "" });
+const emptyDraft = (): Draft => ({
+  key: crypto.randomUUID(),
+  name: "",
+  email: "",
+  userId: "",
+});
 
 export function JobsAdmin() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [portalUsers, setPortalUsers] = useState<ClientOption[]>([]);
   const [name, setName] = useState("");
-  const [drafts, setDrafts] = useState<Record<string, Draft>>({});
+  const [drafts, setDrafts] = useState<Record<string, Draft[]>>({});
+  const [editingNameId, setEditingNameId] = useState<string | null>(null);
+  const [nameDraft, setNameDraft] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -107,24 +114,56 @@ export function JobsAdmin() {
     await load();
   }
 
-  async function addClient(job: Job) {
-    const draft = drafts[job.id] ?? emptyDraft();
-    const fullName = draft.name.trim();
-    const email = draft.email.trim();
-    if (!fullName || !email) {
-      setError("Each client needs a name and email.");
+  async function saveJobName(job: Job) {
+    const trimmed = nameDraft.trim();
+    if (!trimmed) {
+      setError("Job name cannot be empty.");
+      return;
+    }
+    if (trimmed === job.name) {
+      setEditingNameId(null);
+      return;
+    }
+    await patchJob(job, { name: trimmed });
+    setEditingNameId(null);
+  }
+
+  function draftsFor(jobId: string) {
+    return drafts[jobId] ?? [{ key: `${jobId}-first`, name: "", email: "", userId: "" }];
+  }
+
+  function setJobDrafts(jobId: string, next: Draft[]) {
+    setDrafts((current) => ({ ...current, [jobId]: next }));
+  }
+
+  function patchDraft(jobId: string, key: string, partial: Partial<Draft>) {
+    const current = draftsFor(jobId);
+    setJobDrafts(
+      jobId,
+      current.map((draft) => (draft.key === key ? { ...draft, ...partial } : draft))
+    );
+  }
+
+  async function saveNewClients(job: Job) {
+    const ready = draftsFor(job.id).filter(
+      (draft) => draft.name.trim() && draft.email.trim()
+    );
+    if (!ready.length) {
+      setError("Add a client name and email before saving.");
       return;
     }
     const supabase = createClient();
     if (!supabase) return;
-    const nextOrder = (job.clients?.length ?? 0);
-    const { error: insertError } = await supabase.from("job_clients").insert({
-      job_id: job.id,
-      full_name: fullName,
-      email,
-      client_user_id: draft.userId || null,
-      sort_order: nextOrder,
-    });
+    const startOrder = job.clients?.length ?? 0;
+    const { error: insertError } = await supabase.from("job_clients").insert(
+      ready.map((draft, index) => ({
+        job_id: job.id,
+        full_name: draft.name.trim(),
+        email: draft.email.trim(),
+        client_user_id: draft.userId || null,
+        sort_order: startOrder + index,
+      }))
+    );
     if (insertError) {
       setError(
         /unique|duplicate/i.test(insertError.message)
@@ -133,7 +172,7 @@ export function JobsAdmin() {
       );
       return;
     }
-    setDrafts((current) => ({ ...current, [job.id]: emptyDraft() }));
+    setJobDrafts(job.id, [emptyDraft()]);
     setError(null);
     await load();
   }
@@ -203,25 +242,63 @@ export function JobsAdmin() {
       ) : (
         <ul className="space-y-4">
           {jobs.map((job) => {
-            const draft = drafts[job.id] ?? emptyDraft();
+            const newClients = draftsFor(job.id);
             return (
               <li key={job.id} className="space-y-4 rounded-lg border border-border p-4">
-                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                  <Input
-                    className="min-h-11"
-                    defaultValue={job.name}
-                    aria-label={`Name for ${job.name}`}
-                    onBlur={(e) => {
-                      const next = e.target.value.trim();
-                      if (next && next !== job.name) {
-                        void patchJob(job, { name: next });
-                      }
-                    }}
-                    onKeyDown={(e) => {
-                      if (e.key === "Enter") e.currentTarget.blur();
-                    }}
-                  />
-                  <div className="flex items-center gap-2">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex-1">
+                    {editingNameId === job.id ? (
+                      <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                        <Input
+                          className="min-h-11"
+                          value={nameDraft}
+                          aria-label="Job name"
+                          autoFocus
+                          onChange={(e) => setNameDraft(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              e.preventDefault();
+                              void saveJobName(job);
+                            }
+                            if (e.key === "Escape") setEditingNameId(null);
+                          }}
+                        />
+                        <Button
+                          type="button"
+                          className="min-h-11"
+                          onClick={() => void saveJobName(job)}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-11"
+                          onClick={() => setEditingNameId(null)}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
+                    ) : (
+                      <div className="flex flex-wrap items-center gap-2">
+                        <h2 className="font-heading text-2xl md:text-3xl">
+                          {job.name}
+                        </h2>
+                        <Button
+                          type="button"
+                          variant="outline"
+                          className="min-h-11"
+                          onClick={() => {
+                            setEditingNameId(job.id);
+                            setNameDraft(job.name);
+                          }}
+                        >
+                          Edit name
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                  <div className="flex shrink-0 items-center gap-2">
                     <span
                       className={cn(
                         "text-xs font-medium capitalize",
@@ -242,135 +319,157 @@ export function JobsAdmin() {
                 </div>
 
                 <div className="space-y-3">
-                  <h3 className="font-heading text-lg">Clients</h3>
-                  <p className="text-xs text-muted-foreground">
-                    Add everyone who should receive estimates — typically both
-                    spouses. Each email gets the same share link.
+                  <p className="text-sm font-medium text-muted-foreground">
+                    Clients
                   </p>
-                  {(job.clients ?? []).map((client) => (
-                    <div
-                      key={client.id ?? client.email}
-                      className="grid gap-3 rounded-lg border border-border p-3 sm:grid-cols-2"
-                    >
-                      <div className="space-y-1.5">
-                        <Label>Name</Label>
-                        <Input
-                          className="min-h-11"
-                          defaultValue={client.full_name}
-                          onBlur={(e) => {
-                            const next = e.target.value.trim();
-                            if (next && next !== client.full_name) {
-                              void patchClient(client, { full_name: next });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1.5">
-                        <Label>Email</Label>
-                        <Input
-                          type="email"
-                          className="min-h-11"
-                          defaultValue={client.email}
-                          onBlur={(e) => {
-                            const next = e.target.value.trim();
-                            if (next && next !== client.email) {
-                              void patchClient(client, { email: next });
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="space-y-1.5 sm:col-span-2">
-                        <Label>Portal user (optional)</Label>
-                        <select
-                          className="flex min-h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                          value={client.client_user_id ?? ""}
-                          onChange={(e) =>
-                            void patchClient(client, {
-                              client_user_id: e.target.value || null,
-                            })
-                          }
+                  {(job.clients ?? []).length ? (
+                    <ul className="divide-y divide-border rounded-lg border border-border">
+                      {(job.clients ?? []).map((client) => (
+                        <li
+                          key={client.id ?? client.email}
+                          className="flex flex-col gap-2 p-3 sm:flex-row sm:items-center sm:justify-between"
                         >
-                          <option value="">No portal login</option>
-                          {portalUsers.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {user.full_name?.trim() || "Client"}
-                            </option>
-                          ))}
-                        </select>
+                          <div className="min-w-0">
+                            <p className="font-medium">{client.full_name}</p>
+                            <p className="truncate text-xs text-muted-foreground">
+                              {client.email}
+                            </p>
+                          </div>
+                          <div className="flex flex-col gap-2 sm:flex-row sm:items-center">
+                            <select
+                              className="flex min-h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm sm:w-48"
+                              value={client.client_user_id ?? ""}
+                              aria-label={`Portal user for ${client.full_name}`}
+                              onChange={(e) =>
+                                void patchClient(client, {
+                                  client_user_id: e.target.value || null,
+                                })
+                              }
+                            >
+                              <option value="">No portal login</option>
+                              {portalUsers.map((user) => (
+                                <option key={user.id} value={user.id}>
+                                  {user.full_name?.trim() || "Client"}
+                                </option>
+                              ))}
+                            </select>
+                            <Button
+                              type="button"
+                              variant="outline"
+                              className="min-h-11"
+                              onClick={() => void removeClient(client)}
+                            >
+                              Remove
+                            </Button>
+                          </div>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p className="text-xs text-muted-foreground">
+                      No clients yet. Add the first contact below.
+                    </p>
+                  )}
+
+                  <div className="space-y-3 rounded-lg border border-border p-3">
+                    <p className="text-sm font-medium">Add clients</p>
+                    <p className="text-xs text-muted-foreground">
+                      Start with one contact. Use “Add another client” for a
+                      spouse or extra email.
+                    </p>
+                    {newClients.map((draft, index) => (
+                      <div
+                        key={draft.key}
+                        className="grid gap-3 rounded-lg border border-dashed border-border p-3 sm:grid-cols-2"
+                      >
+                        <p className="text-xs font-medium text-muted-foreground sm:col-span-2">
+                          Client {index + 1}
+                        </p>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`new-name-${job.id}-${draft.key}`}>
+                            Name
+                          </Label>
+                          <Input
+                            id={`new-name-${job.id}-${draft.key}`}
+                            className="min-h-11"
+                            placeholder="e.g. Jane Smith"
+                            value={draft.name}
+                            onChange={(e) =>
+                              patchDraft(job.id, draft.key, { name: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <Label htmlFor={`new-email-${job.id}-${draft.key}`}>
+                            Email
+                          </Label>
+                          <Input
+                            id={`new-email-${job.id}-${draft.key}`}
+                            type="email"
+                            className="min-h-11"
+                            placeholder="jane@example.com"
+                            value={draft.email}
+                            onChange={(e) =>
+                              patchDraft(job.id, draft.key, { email: e.target.value })
+                            }
+                          />
+                        </div>
+                        <div className="space-y-1.5 sm:col-span-2">
+                          <Label htmlFor={`new-user-${job.id}-${draft.key}`}>
+                            Portal user (optional)
+                          </Label>
+                          <select
+                            id={`new-user-${job.id}-${draft.key}`}
+                            className="flex min-h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
+                            value={draft.userId}
+                            onChange={(e) =>
+                              patchDraft(job.id, draft.key, { userId: e.target.value })
+                            }
+                          >
+                            <option value="">No portal login</option>
+                            {portalUsers.map((user) => (
+                              <option key={user.id} value={user.id}>
+                                {user.full_name?.trim() || "Client"}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+                        {newClients.length > 1 ? (
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="min-h-11 sm:col-span-2"
+                            onClick={() =>
+                              setJobDrafts(
+                                job.id,
+                                newClients.filter((item) => item.key !== draft.key)
+                              )
+                            }
+                          >
+                            Remove this form
+                          </Button>
+                        ) : null}
                       </div>
+                    ))}
+                    <div className="flex flex-col gap-2 sm:flex-row">
                       <Button
                         type="button"
                         variant="outline"
-                        className="min-h-11 sm:col-span-2"
-                        onClick={() => void removeClient(client)}
+                        className="min-h-11"
+                        onClick={() =>
+                          setJobDrafts(job.id, [...newClients, emptyDraft()])
+                        }
                       >
-                        Remove client
+                        Add another client
+                      </Button>
+                      <Button
+                        type="button"
+                        className="min-h-11"
+                        onClick={() => void saveNewClients(job)}
+                      >
+                        Save clients
                       </Button>
                     </div>
-                  ))}
-
-                  <div className="grid gap-3 rounded-lg border border-dashed border-border p-3 sm:grid-cols-2">
-                    <div className="space-y-1.5">
-                      <Label htmlFor={`new-name-${job.id}`}>Add client name</Label>
-                      <Input
-                        id={`new-name-${job.id}`}
-                        className="min-h-11"
-                        placeholder="e.g. Jane Smith"
-                        value={draft.name}
-                        onChange={(e) =>
-                          setDrafts((current) => ({
-                            ...current,
-                            [job.id]: { ...draft, name: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5">
-                      <Label htmlFor={`new-email-${job.id}`}>Email</Label>
-                      <Input
-                        id={`new-email-${job.id}`}
-                        type="email"
-                        className="min-h-11"
-                        placeholder="jane@example.com"
-                        value={draft.email}
-                        onChange={(e) =>
-                          setDrafts((current) => ({
-                            ...current,
-                            [job.id]: { ...draft, email: e.target.value },
-                          }))
-                        }
-                      />
-                    </div>
-                    <div className="space-y-1.5 sm:col-span-2">
-                      <Label htmlFor={`new-user-${job.id}`}>
-                        Portal user (optional)
-                      </Label>
-                      <select
-                        id={`new-user-${job.id}`}
-                        className="flex min-h-11 w-full rounded-lg border border-input bg-transparent px-2.5 text-sm"
-                        value={draft.userId}
-                        onChange={(e) =>
-                          setDrafts((current) => ({
-                            ...current,
-                            [job.id]: { ...draft, userId: e.target.value },
-                          }))
-                        }
-                      >
-                        <option value="">No portal login</option>
-                        {portalUsers.map((user) => (
-                          <option key={user.id} value={user.id}>
-                            {user.full_name?.trim() || "Client"}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <Button
-                      type="button"
-                      className="min-h-11 sm:col-span-2"
-                      onClick={() => void addClient(job)}
-                    >
-                      Add client
-                    </Button>
                   </div>
                 </div>
               </li>
