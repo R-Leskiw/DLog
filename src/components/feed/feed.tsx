@@ -1,8 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { Camera } from "lucide-react";
+import { Eye, EyeOff, Plus } from "lucide-react";
 
 import { FeedDetail } from "@/components/feed/feed-detail";
 import { FeedMobileCard } from "@/components/feed/feed-mobile-card";
@@ -11,7 +11,8 @@ import {
   FeedFilters,
   type FeedFilterValues,
 } from "@/components/feed/feed-filters";
-import { Button } from "@/components/ui/button";
+import { Button, buttonVariants } from "@/components/ui/button";
+import { Label } from "@/components/ui/label";
 import { createClient } from "@/lib/supabase/client";
 import type { FeedLog } from "@/types/feed";
 import { cn } from "@/lib/utils";
@@ -44,7 +45,13 @@ function sanitizeSearch(raw: string) {
   return raw.trim().replace(/[%_,()]/g, "");
 }
 
-export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
+export function Feed({
+  canCreateLogs = false,
+  isAdmin = false,
+}: {
+  canCreateLogs?: boolean;
+  isAdmin?: boolean;
+}) {
   const [logs, setLogs] = useState<FeedLog[]>([]);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -55,6 +62,51 @@ export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
   const [debouncedSearch, setDebouncedSearch] = useState("");
   const [jobs, setJobs] = useState<{ id: string; name: string }[]>([]);
   const [authors, setAuthors] = useState<{ id: string; name: string }[]>([]);
+  const [clientPreview, setClientPreview] = useState(false);
+  const [previewClientId, setPreviewClientId] = useState("all");
+  const [portalClients, setPortalClients] = useState<
+    { id: string; name: string }[]
+  >([]);
+  const [previewJobIds, setPreviewJobIds] = useState<string[] | null>(null);
+
+  const showClientView = isAdmin && clientPreview;
+  const effectiveCanCreate = canCreateLogs && !showClientView;
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase || !isAdmin) return;
+    void (async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .eq("role", "client")
+        .eq("approval_status", "approved")
+        .order("full_name");
+      setPortalClients(
+        (data ?? [])
+          .filter((p) => p.full_name?.trim())
+          .map((p) => ({
+            id: p.id as string,
+            name: (p.full_name as string).trim(),
+          }))
+      );
+    })();
+  }, [isAdmin]);
+
+  useEffect(() => {
+    const supabase = createClient();
+    if (!supabase || !showClientView || previewClientId === "all") {
+      setPreviewJobIds(null);
+      return;
+    }
+    void (async () => {
+      const { data } = await supabase
+        .from("job_clients")
+        .select("job_id")
+        .eq("client_user_id", previewClientId);
+      setPreviewJobIds((data ?? []).map((r) => r.job_id as string));
+    })();
+  }, [showClientView, previewClientId]);
 
   useEffect(() => {
     const t = window.setTimeout(() => {
@@ -191,16 +243,27 @@ export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
     setLoadingMore(false);
   }
 
-  const selected = logs.find((l) => l.id === selectedId) ?? logs[0] ?? null;
+  const visibleLogs = useMemo(() => {
+    if (!showClientView || previewClientId === "all" || !previewJobIds) {
+      return logs;
+    }
+    if (previewJobIds.length === 0) return [];
+    const allowed = new Set(previewJobIds);
+    return logs.filter((log) => log.job && allowed.has(log.job.id));
+  }, [logs, previewClientId, previewJobIds, showClientView]);
+
+  const selected =
+    visibleLogs.find((l) => l.id === selectedId) ?? visibleLogs[0] ?? null;
   const hasActiveFilters =
-    filters.jobId !== "all" ||
-    Boolean(filters.date) ||
-    filters.authorId !== "all" ||
-    Boolean(debouncedSearch);
+    !showClientView &&
+    (filters.jobId !== "all" ||
+      Boolean(filters.date) ||
+      filters.authorId !== "all" ||
+      Boolean(debouncedSearch));
 
   const list = (
     <>
-      {logs.map((log) => {
+      {visibleLogs.map((log) => {
         const isSelected = log.id === selected?.id;
         return (
           <button
@@ -245,35 +308,105 @@ export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
   return (
     <main className="flex w-full flex-1 flex-col md:min-h-0">
       <div className="space-y-4 border-b border-border px-4 py-4 md:px-8">
-        <div>
-          <h1 className="font-heading text-2xl md:text-3xl">Daily logs</h1>
-          <p className="text-sm text-muted-foreground">
-            Filter by job, date, author, or keywords.
-          </p>
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+          <div>
+            <h1 className="font-heading text-2xl md:text-3xl">Daily logs</h1>
+            <p className="text-sm text-muted-foreground">
+              {showClientView
+                ? "Client portal preview — same responsive layout, without staff tools."
+                : "Filter by job, date, author, or keywords."}
+            </p>
+          </div>
+          <div className="flex flex-wrap items-center gap-2">
+            {effectiveCanCreate ? (
+              <Link
+                href="/logs/new"
+                className={cn(buttonVariants(), "min-h-11 gap-2")}
+              >
+                <Plus className="size-4" aria-hidden />
+                New log
+              </Link>
+            ) : null}
+            {isAdmin ? (
+              <Button
+                type="button"
+                variant={showClientView ? "default" : "outline"}
+                className="min-h-11 shrink-0 gap-2"
+                onClick={() => setClientPreview((v) => !v)}
+              >
+                {showClientView ? (
+                  <>
+                    <EyeOff className="size-4" aria-hidden />
+                    Exit client preview
+                  </>
+                ) : (
+                  <>
+                    <Eye className="size-4" aria-hidden />
+                    Preview client view
+                  </>
+                )}
+              </Button>
+            ) : null}
+          </div>
         </div>
-        <FeedFilters
-          value={filters}
-          onChange={setFilters}
-          jobs={jobs}
-          authors={authors}
-        />
+
+        {showClientView ? (
+          <div className="space-y-3 rounded-lg border border-primary/30 bg-primary/5 px-4 py-3">
+            <p className="text-sm font-medium text-foreground">
+              Client preview mode
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Staff filters and add-log controls are hidden. Pick a portal
+              client to preview logs for their linked jobs only.
+            </p>
+            <div className="max-w-sm space-y-1.5">
+              <Label htmlFor="preview-client">Preview as</Label>
+              <select
+                id="preview-client"
+                className="flex min-h-11 w-full rounded-lg border border-input bg-background px-2.5 text-sm"
+                value={previewClientId}
+                onChange={(e) => setPreviewClientId(e.target.value)}
+              >
+                <option value="all">All logs (default client feed)</option>
+                {portalClients.map((client) => (
+                  <option key={client.id} value={client.id}>
+                    {client.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+        ) : (
+          <FeedFilters
+            value={filters}
+            onChange={setFilters}
+            jobs={jobs}
+            authors={authors}
+          />
+        )}
       </div>
 
       {loading ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">Loading logs…</p>
       ) : error ? (
         <p className="px-4 py-6 text-sm text-destructive">{error}</p>
-      ) : logs.length === 0 ? (
+      ) : visibleLogs.length === 0 ? (
         <p className="px-4 py-6 text-sm text-muted-foreground">
-          {hasActiveFilters
-            ? "No logs match these filters."
-            : "No logs yet. Employees can add the first daily log."}
+          {showClientView && previewClientId !== "all"
+            ? "No logs for this client’s linked jobs yet."
+            : hasActiveFilters
+              ? "No logs match these filters."
+              : "No logs yet. Employees can add the first daily log."}
         </p>
       ) : (
         <>
           <div className="block md:hidden">
-            {logs.map((log) => (
-              <FeedMobileCard key={log.id} log={log} />
+            {visibleLogs.map((log) => (
+              <FeedMobileCard
+                key={log.id}
+                log={log}
+                canComment={!showClientView}
+              />
             ))}
             {hasMore ? (
               <div className="flex justify-center py-4">
@@ -295,25 +428,13 @@ export function Feed({ canCreateLogs = false }: { canCreateLogs?: boolean }) {
               {list}
             </aside>
             <section className="min-h-0 flex-1 overflow-y-auto px-8 py-6">
-              {selected ? <FeedDetail log={selected} /> : null}
+              {selected ? (
+                <FeedDetail log={selected} canComment={!showClientView} />
+              ) : null}
             </section>
           </div>
         </>
       )}
-
-      {canCreateLogs ? (
-        <Link
-          href="/logs/new"
-          aria-label="Add photo to daily log"
-          className="fixed z-50 flex size-14 min-h-11 min-w-11 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-lg md:hidden"
-          style={{
-            bottom: "calc(4.5rem + env(safe-area-inset-bottom))",
-            right: "1rem",
-          }}
-        >
-          <Camera className="size-7" aria-hidden />
-        </Link>
-      ) : null}
     </main>
   );
 }

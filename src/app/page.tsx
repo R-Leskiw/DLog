@@ -41,7 +41,10 @@ export default async function HomePage() {
 
   return (
     <AppShell role={role}>
-      <Feed canCreateLogs={isStaffRole(role)} />
+      <Feed
+        canCreateLogs={isStaffRole(role)}
+        isAdmin={role === "admin"}
+      />
     </AppShell>
   );
 }

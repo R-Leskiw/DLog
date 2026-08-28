@@ -5,7 +5,6 @@ import { usePathname } from "next/navigation";
 import {
   CalendarDays,
   ClipboardList,
-  ClipboardPlus,
   FileSpreadsheet,
   LayoutDashboard,
   MessageCircle,
@@ -24,7 +23,6 @@ const staffNav = [
   { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
   { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
   { href: "/timeclock", label: "Clock", icon: Timer, mobile: true },
-  { href: "/logs/new", label: "Add log", icon: ClipboardPlus, mobile: false },
   { href: "/estimates", label: "Estimates", icon: FileSpreadsheet, mobile: false },
   { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
 ] as const;
@@ -56,7 +54,7 @@ function NavLink({
   const pathname = usePathname();
   const isActive =
     href === "/"
-      ? pathname === "/"
+      ? pathname === "/" || pathname.startsWith("/logs")
       : pathname === href || pathname.startsWith(`${href}/`);
 
   return (

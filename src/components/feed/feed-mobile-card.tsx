@@ -20,7 +20,13 @@ function excerpt(text: string | null, max = 140) {
   return `${t.slice(0, max).trim()}…`;
 }
 
-export function FeedMobileCard({ log }: { log: FeedLog }) {
+export function FeedMobileCard({
+  log,
+  canComment = true,
+}: {
+  log: FeedLog;
+  canComment?: boolean;
+}) {
   const authorName = log.author?.full_name?.trim() || "Team member";
   const images = log.image_urls?.filter(Boolean) ?? [];
   const jobName = log.job?.name;
@@ -66,7 +72,7 @@ export function FeedMobileCard({ log }: { log: FeedLog }) {
         ) : null}
       </div>
 
-      <CommentThread logId={log.id} />
+      <CommentThread logId={log.id} canComment={canComment} />
     </article>
   );
 }

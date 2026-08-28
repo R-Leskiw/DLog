@@ -15,7 +15,13 @@ function formatDate(date: string) {
   }
 }
 
-export function FeedDetail({ log }: { log: FeedLog }) {
+export function FeedDetail({
+  log,
+  canComment = true,
+}: {
+  log: FeedLog;
+  canComment?: boolean;
+}) {
   const authorName = log.author?.full_name?.trim() || "Team member";
   const images = log.image_urls?.filter(Boolean) ?? [];
   const jobName = log.job?.name;
@@ -52,7 +58,7 @@ export function FeedDetail({ log }: { log: FeedLog }) {
         <h3 className="border-b border-border px-4 py-3 text-sm font-semibold">
           Comments
         </h3>
-        <CommentThread logId={log.id} />
+        <CommentThread logId={log.id} canComment={canComment} />
       </section>
     </article>
   );

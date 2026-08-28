@@ -198,7 +198,7 @@ export function DailyLogForm() {
         return;
       }
 
-      router.push("/logs");
+      router.push("/");
       router.refresh();
     } finally {
       setUploading(false);

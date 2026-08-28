@@ -13,17 +13,19 @@ function CommentItem({
   node,
   depth,
   onReply,
+  canComment,
 }: {
   node: CommentNode;
   depth: number;
   onReply: (parentId: string) => void;
+  canComment: boolean;
 }) {
   const name = node.profiles?.full_name?.trim() || "User";
   return (
     <li className={cn(depth > 0 && "ml-4 border-l border-border pl-3")}>
       <p className="text-xs font-medium text-foreground">{name}</p>
       <p className="text-sm text-muted-foreground">{node.content}</p>
-      {depth === 0 ? (
+      {depth === 0 && canComment ? (
         <button
           type="button"
           className="mt-0.5 text-xs text-primary underline"
@@ -40,6 +42,7 @@ function CommentItem({
               node={r}
               depth={depth + 1}
               onReply={onReply}
+              canComment={canComment}
             />
           ))}
         </ul>
@@ -48,7 +51,13 @@ function CommentItem({
   );
 }
 
-export function CommentThread({ logId }: { logId: string }) {
+export function CommentThread({
+  logId,
+  canComment = true,
+}: {
+  logId: string;
+  canComment?: boolean;
+}) {
   const [open, setOpen] = useState(false);
   const [tree, setTree] = useState<CommentNode[]>([]);
   const [count, setCount] = useState(0);
@@ -151,29 +160,36 @@ export function CommentThread({ logId }: { logId: string }) {
                   node={node}
                   depth={0}
                   onReply={(id) => setReplyTo(id)}
+                  canComment={canComment}
                 />
               ))}
             </ul>
           ) : (
             <p className="text-xs text-muted-foreground">No comments yet.</p>
           )}
-          <form onSubmit={submit} className="flex gap-2">
-            <Input
-              placeholder={replyTo ? "Write a reply…" : "Add a comment…"}
-              value={text}
-              onChange={(e) => setText(e.target.value)}
-              className="min-h-10 flex-1"
-            />
-            <Button
-              type="submit"
-              size="sm"
-              className="min-h-10 shrink-0"
-              disabled={loading}
-            >
-              Post
-            </Button>
-          </form>
-          {replyTo ? (
+          {canComment ? (
+            <form onSubmit={submit} className="flex gap-2">
+              <Input
+                placeholder={replyTo ? "Write a reply…" : "Add a comment…"}
+                value={text}
+                onChange={(e) => setText(e.target.value)}
+                className="min-h-10 flex-1"
+              />
+              <Button
+                type="submit"
+                size="sm"
+                className="min-h-10 shrink-0"
+                disabled={loading}
+              >
+                Post
+              </Button>
+            </form>
+          ) : (
+            <p className="text-xs text-muted-foreground">
+              Commenting is disabled in client preview.
+            </p>
+          )}
+          {canComment && replyTo ? (
             <button
               type="button"
               className="text-xs text-muted-foreground underline"
