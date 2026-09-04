@@ -18,9 +18,11 @@ Follow these steps in order. **Never commit** `.env.local` (it is gitignored).
    - [`supabase/migrations/0007_estimate_proposals.sql`](supabase/migrations/0007_estimate_proposals.sql) (e-sign, versions, share links, `estimate-docs` bucket)
    - [`supabase/migrations/0008_job_clients.sql`](supabase/migrations/0008_job_clients.sql) (multiple clients per job)
    - [`supabase/migrations/0009_schedule_gantt_deps_templates.sql`](supabase/migrations/0009_schedule_gantt_deps_templates.sql) (Gantt dependencies + schedule templates)
+   - [`supabase/migrations/0010_job_documents.sql`](supabase/migrations/0010_job_documents.sql) (job document folders + versioned files, `job-docs` bucket)
 6. **Storage** — create bucket **`log-images`**, set **Public bucket** ON.
 7. **SQL Editor** — run [`supabase/storage_policies.sql`](supabase/storage_policies.sql)
    The `estimate-docs` bucket is created by `0007` (private). Contract PDFs and signatures are served via signed URLs / API routes.
+   The `job-docs` bucket is created by `0010` (private). Job files are opened via signed URLs.
 8. **Authentication → Providers** — enable Email.
 9. **Authentication → URL Configuration**:
 

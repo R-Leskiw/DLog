@@ -7,6 +7,7 @@ import { ChevronLeft, ChevronRight } from "lucide-react";
 import { ScheduleLookahead } from "@/components/schedule/schedule-lookahead";
 import { ScheduleTemplatesPanel } from "@/components/schedule/schedule-templates-panel";
 import { ScheduleTimeline } from "@/components/schedule/schedule-timeline";
+import { PageTrail } from "@/components/layout/page-breadcrumbs";
 import { Button } from "@/components/ui/button";
 import {
   Card,
@@ -87,6 +88,7 @@ function ScheduleBoardInner({ canEdit }: { canEdit: boolean }) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const jobFilter = searchParams.get("job") || "all";
+  const fromJob = searchParams.get("from") === "job";
 
   const [anchor, setAnchor] = useState(() => startOfWeekMonday(new Date()));
   const [zoomDays, setZoomDays] = useState<ScheduleZoomDays>(14);
@@ -123,13 +125,21 @@ function ScheduleBoardInner({ canEdit }: { canEdit: boolean }) {
 
   const setJobFilter = useCallback(
     (id: string) => {
+      if (fromJob && id === "all") {
+        router.push("/jobs");
+        return;
+      }
       const params = new URLSearchParams(searchParams.toString());
-      if (id === "all") params.delete("job");
-      else params.set("job", id);
+      if (id === "all") {
+        params.delete("job");
+        params.delete("from");
+      } else {
+        params.set("job", id);
+      }
       const qs = params.toString();
       router.replace(qs ? `${pathname}?${qs}` : pathname, { scroll: false });
     },
-    [pathname, router, searchParams]
+    [fromJob, pathname, router, searchParams]
   );
 
   const load = useCallback(async () => {
@@ -809,19 +819,33 @@ function ScheduleBoardInner({ canEdit }: { canEdit: boolean }) {
 
   const stepDays = zoomDays === 7 ? 7 : zoomDays === 21 ? 7 : 7;
 
+  const crumbs = isAllJobs
+    ? [{ label: "Schedule" }]
+    : fromJob
+      ? [
+          { label: "Jobs", href: "/jobs" },
+          {
+            label: selectedJob?.name ?? "Job",
+            href: `/jobs/${jobFilter}`,
+          },
+          { label: "Schedule" },
+        ]
+      : [
+          { label: "Schedule", href: "/schedule" },
+          { label: selectedJob?.name ?? "Job" },
+        ];
+
+  const trailFallback = fromJob && !isAllJobs
+    ? `/jobs/${jobFilter}`
+    : isAllJobs
+      ? "/dashboard"
+      : "/schedule";
+
   return (
     <main className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
       <header className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          {!isAllJobs ? (
-            <button
-              type="button"
-              className="mb-1 min-h-11 text-sm text-muted-foreground underline-offset-4 hover:text-foreground hover:underline"
-              onClick={() => setJobFilter("all")}
-            >
-              ← All jobs
-            </button>
-          ) : null}
+          <PageTrail items={crumbs} fallbackHref={trailFallback} />
           <h1 className="font-heading text-3xl md:text-4xl">{heading}</h1>
           <p className="mt-1 text-muted-foreground">
             {isAllJobs

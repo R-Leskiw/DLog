@@ -2,6 +2,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { Briefcase, FileText, UserCheck } from "lucide-react";
 
+import { PageTrail } from "@/components/layout/page-breadcrumbs";
 import { getSessionUser } from "@/lib/auth/profile";
 import { cn } from "@/lib/utils";
 
@@ -33,6 +34,7 @@ export default async function AdminPage() {
   return (
     <main className="mx-auto flex w-full max-w-5xl flex-1 flex-col gap-6 px-4 py-6 md:px-8 md:py-8">
       <header>
+        <PageTrail items={[{ label: "Admin" }]} fallbackHref="/dashboard" />
         <h1 className="text-3xl md:text-4xl">Admin</h1>
         <p className="mt-1 text-muted-foreground">
           Company owner controls for jobs and account access.

@@ -3,9 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
+  Briefcase,
   CalendarDays,
   ClipboardList,
   FileSpreadsheet,
+  FolderOpen,
   LayoutDashboard,
   MessageCircle,
   Settings,
@@ -13,15 +15,19 @@ import {
   User,
 } from "lucide-react";
 
+import { SignOutButton } from "@/components/auth/sign-out-button";
 import { siteConfig } from "@/config/site";
+import { postLoginPath } from "@/lib/auth/home-path";
 import { cn } from "@/lib/utils";
 import type { UserRole } from "@/types/roles";
 import { isStaffRole } from "@/types/roles";
 
 const staffNav = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard, mobile: true },
-  { href: "/", label: "Logs", icon: ClipboardList, mobile: true },
-  { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: true },
+  { href: "/jobs", label: "Jobs", icon: Briefcase, mobile: true },
+  { href: "/", label: "Logs", icon: ClipboardList, mobile: false },
+  { href: "/schedule", label: "Schedule", icon: CalendarDays, mobile: false },
+  { href: "/documents", label: "Docs", icon: FolderOpen, mobile: false },
   { href: "/timeclock", label: "Clock", icon: Timer, mobile: true },
   { href: "/estimates", label: "Estimates", icon: FileSpreadsheet, mobile: false },
   { href: "/chat", label: "Chat", icon: MessageCircle, mobile: true },
@@ -91,20 +97,29 @@ export function AppNavigation({ role }: { role: UserRole }) {
         aria-label="Main navigation"
       >
         <div className="border-b border-sidebar-border px-4 py-5">
-          <p className="font-heading text-lg text-sidebar-foreground">
+          <Link
+            href={postLoginPath(role)}
+            className="font-heading text-lg text-sidebar-foreground hover:text-foreground"
+          >
             {siteConfig.name}
-          </p>
+          </Link>
           <p className="text-xs capitalize text-muted-foreground">{role}</p>
         </div>
-        <nav className="flex flex-1 flex-col gap-1 p-3">
+        <nav className="flex flex-1 flex-col gap-1 overflow-y-auto p-3">
           {navItems.map((item) => (
             <NavLink key={item.href} {...item} />
           ))}
         </nav>
+        <div className="border-t border-sidebar-border p-3">
+          <SignOutButton
+            variant="default"
+            className="min-h-11 w-full bg-yellow-400 text-foreground hover:bg-yellow-400/90"
+          />
+        </div>
       </aside>
 
       <nav
-        className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background/95 pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-2 backdrop-blur supports-[backdrop-filter]:bg-background/80 md:hidden print:hidden"
+        className="fixed bottom-0 left-0 right-0 z-40 flex border-t border-border bg-background pb-[max(0.25rem,env(safe-area-inset-bottom))] pt-2 md:hidden print:hidden"
         aria-label="Main navigation"
       >
         {navItems
@@ -113,7 +128,7 @@ export function AppNavigation({ role }: { role: UserRole }) {
             <NavLink
               key={item.href}
               {...item}
-              className="flex-1 flex-row justify-center gap-1 px-1"
+              className="flex-1 flex-col justify-center gap-0.5 px-1"
             />
           ))}
       </nav>

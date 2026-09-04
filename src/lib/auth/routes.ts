@@ -12,7 +12,9 @@ export const EMPLOYEE_ONLY_PREFIXES = [
   "/logs/new",
   "/chat",
   "/dashboard",
+  "/jobs",
   "/schedule",
+  "/documents",
   "/timeclock",
   "/messages",
   "/estimates",
@@ -47,7 +49,9 @@ export function isProtectedAppRoute(pathname: string): boolean {
     pathname.startsWith("/profile") ||
     pathname.startsWith("/admin") ||
     pathname.startsWith("/dashboard") ||
+    pathname.startsWith("/jobs") ||
     pathname.startsWith("/schedule") ||
+    pathname.startsWith("/documents") ||
     pathname.startsWith("/timeclock") ||
     pathname.startsWith("/messages") ||
     pathname.startsWith("/estimates") ||
